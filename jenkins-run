@@ -1,0 +1,44 @@
+@echo off
+
+echo ============================  first run ============================
+call robot --outputdir %BUILD_NUMBER%\TestResults ^
+      --pythonpath %cd% ^
+      --variable ENV:%ENVIRONMENT% ^
+      --variable BROWSER:%BROWSER% ^
+      --variable DBPass:%DBPass% ^
+      --variable WFDBPass:%WFDBPass% ^
+      --variable UI_TIMEOUT:%UI_TIMEOUT% ^
+      --loglevel INFO ^
+      "startplus\tests\startplus_ui"
+
+set NUM_FAILED=%ERRORLEVEL%
+echo %NUM_FAILED%
+if errorlevel 1 goto DGTFO
+echo ======================  Test passed on first run ======================
+exit /b 
+
+:DGTFO
+copy %BUILD_NUMBER%\TestResults\log.html %BUILD_NUMBER%\TestResults\first_run_log.html /Y
+
+echo =================  Running again the tests that failed [%NUM_FAILED%] =================
+call robot --outputdir %BUILD_NUMBER%\TestResults ^
+      --pythonpath %cd% ^
+      --nostatusrc ^
+      --rerunfailed %BUILD_NUMBER%\TestResults\output.xml ^
+      --output rerun.xml ^
+      --variable ENV:%ENVIRONMENT% ^
+      --variable BROWSER:%BROWSER% ^
+      --variable DBPass:%DBPass% ^
+      --variable WFDBPass:%WFDBPass% ^
+      --variable UI_TIMEOUT:%UI_TIMEOUT% ^
+      --loglevel INFO ^
+      "startplus\tests\startplus_ui"
+
+copy %BUILD_NUMBER%\TestResults\log.html %BUILD_NUMBER%\TestResults\second_run_log.html /Y
+
+
+echo =========================  Merging output files =========================
+call rebot --outputdir %BUILD_NUMBER%\TestResults ^
+     --nostatusrc ^
+     --output output.xml ^
+     --merge %BUILD_NUMBER%\TestResults\output.xml %BUILD_NUMBER%\TestResults\rerun.xml
