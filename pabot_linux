@@ -1,0 +1,35 @@
+#!/bin/sh
+
+echo ============================  start to run ============================
+
+pabot --verbose --processes 4 -x ../../junit.xml --pythonpath /mnt/JENKINS_HOME/workspace/startplus_UI_1.8 --outputdir $BUILD_NUMBER/TestResults --variable ENV:$ENVIRONMENT --variable BROWSER:$BROWSER --variable DBPass:$DBPass --variable WFDBPass:$WFDBPass --variable UI_TIMEOUT:$UI_TIMEOUT startplus/tests/startplus_ui
+
+rc=$?
+echo ERRORLEVEL: $rc
+
+if [ $rc -eq 0 ]; then
+
+	echo ============================  Test passed on first run ============================
+    exit 0
+fi
+
+
+cp $BUILD_NUMBER/TestResults/log.html $BUILD_NUMBER/TestResults/first_run_log.html
+
+echo
+echo "#######################################"
+echo "# Running again the tests that failed #"
+echo "#######################################"
+echo
+
+robot --pythonpath /mnt/JENKINS_HOME/workspace/startplus_UI_1.8 --outputdir $BUILD_NUMBER/TestResults --nostatusrc --rerunfailed $BUILD_NUMBER/TestResults/output.xml --output rerun.xml --variable ENV:$ENVIRONMENT --variable BROWSER:$BROWSER --variable DBPass:$DBPass --variable WFDBPass:$WFDBPass --variable UI_TIMEOUT:$UI_TIMEOUT startplus/tests/startplus_ui
+
+cp $BUILD_NUMBER/TestResults/log.html $BUILD_NUMBER/TestResults/second_run_log.html
+
+echo
+echo "########################"
+echo "# Merging output files #"
+echo "########################"
+echo
+
+rebot --nostatusrc -x ../../junit.xml --outputdir $BUILD_NUMBER/TestResults --output output.xml --merge $BUILD_NUMBER/TestResults/output.xml $BUILD_NUMBER/TestResults/rerun.xml
